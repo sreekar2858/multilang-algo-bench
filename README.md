@@ -1,6 +1,16 @@
 # multilang-algo-bench
 
-A comprehensive benchmark suite comparing algorithmic performance across multiple programming languages, implementing both serial and parallel versions of classic algorithms.
+🚀 Multi-language benchmark suite comparing serial vs parallel algorithm implementations in C, C++, Go, Java, Python, and Rust.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+A comprehensive benchmarking suite that implements and compares the performance of classic algorithms across multiple programming languages. The project features:
+
+- 🔍 Three classic algorithms: Fibonacci, Prime Numbers, and QuickSort
+- ⚡ Both serial and parallel implementations for each algorithm
+- 📊 Performance benchmarking and comparison across 6 languages
+- 📈 Visualization tools for analyzing results
+- 🛠️ Configurable thread/processor count for parallel tests
 
 Speed Comparison Tests
 =====================
