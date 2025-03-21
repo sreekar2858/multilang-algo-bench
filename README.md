@@ -3,6 +3,8 @@
 🚀 Multi-language benchmark suite comparing serial vs parallel algorithm implementations in C, C++, Go, Java, Python, and Rust.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Lint](https://github.com/sreekar2858/multilang-algo-bench/actions/workflows/lint.yml/badge.svg)](https://github.com/sreekar2858/multilang-algo-bench/actions/workflows/lint.yml)
+[![Languages](https://img.shields.io/badge/languages-6-blue)](https://github.com/sreekar2858/multilang-algo-bench)
 
 A comprehensive benchmarking suite that implements and compares the performance of classic algorithms across multiple programming languages. The project features:
 
