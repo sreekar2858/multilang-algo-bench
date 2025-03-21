@@ -23,7 +23,8 @@ This project implements three algorithmic tests (Fibonacci sequence, prime numbe
 ## Project Structure
 
 ```
-Speed_Comparison/
+multilang-algo-bench/
+├── bin/              # Compiled executables
 ├── logs/             # Benchmark results in JSON format
 ├── src/              # Source code organized by language
 │   ├── c/            # C implementation
@@ -46,10 +47,10 @@ Speed_Comparison/
 ## Prerequisites:
 - C: GCC or compatible C compiler with pthread support
 - C++: A modern C++ compiler (C++17 or later)
-- Go: Go 1.24.1 or later
-- Python: Python 3.6 or later with pandas and matplotlib
+- Go: Go 1.14 or later
+- Python: Python 3.6 or later with pandas
 - Rust: Rust 1.31 or later (needs Cargo)
-- Java: JDK 11 or later with org.json library
+- Java: JDK 8 or later with org.json library
 
 ### Dependencies
 
@@ -64,71 +65,65 @@ num_cpus = "1.0"
 
 For Python, install required packages:
 ```bash
-pip install pandas matplotlib flake8 black
+pip install pandas
 ```
 
 For Java:
 - org.json library (provided as json.jar)
 - checkstyle for code quality
 
-## Development Setup
+## Cluster/HPC Environment Notes
 
-### Code Quality Tools
+When running on a cluster or HPC environment, you may need to load the appropriate modules:
 
-The project uses several linting and formatting tools:
-- C/C++: clang-format with Google style
-- Python: black formatter and flake8 linter
-- Go: gofmt and go vet
-- Java: checkstyle
-- Rust: rustfmt and clippy
-
-All formatting configurations are provided in the respective config files (.clang-format, pyproject.toml, etc.).
-
-## Quick Start
-
-Clone the repository:
 ```bash
-git clone https://github.com/yourusername/multilang-algo-bench.git
-cd multilang-algo-bench
+# For Rust
+module load Rust/1.65.0  # or another available version
+
+# For Java 
+module load Java/11.0.2  # or Java/13.0.2 or higher
+
+# For Go
+module load Go  # load appropriate Go module if available
 ```
 
 ## Compilation Instructions:
 
 C:
 ```bash
-gcc -O3 src/c/c_test.c -o c_test -pthread -lm
-./c_test [num_threads]
+gcc -O3 src/c/c_test.c -o bin/c_test -pthread -lm
 ```
 
 C++:
 ```bash
-g++ -O3 -std=c++17 src/cpp/cpp_test.cpp -o cpp_test -pthread
-./cpp_test [num_threads]
+g++ -O3 -std=c++17 src/cpp/cpp_test.cpp -o bin/cpp_test -pthread
 ```
 
 Go:
 ```bash
 cd src/go
-go build -o go_test benchmark_test.go
-./go_test [num_processors]
+go build -o ../../bin/go_test benchmark.go
 ```
 
 Rust:
 ```bash
 cd src/rust
 cargo build --release
-cargo run --release -- [num_threads]
+cp target/release/speed_comparison ../../bin/rust_test
 ```
 
 Java:
 ```bash
-javac -cp json.jar src/java/JavaTest.java
-java -cp json.jar:. JavaTest [num_processors]
+# For Java 11 or higher
+javac -cp json.jar src/java/JavaTest.java -d bin
+
+# For Java 8 (if needed for compatibility)
+javac -source 1.8 -target 1.8 -cp json.jar src/java/JavaTest.java -d bin
 ```
 
 Python:
 ```bash
-python src/python/python_test.py [num_processors]
+# Python scripts are run directly from source
 ```
 
 ## Running the Tests:
@@ -147,14 +142,12 @@ bin/cpp_test [num_threads]
 
 Go:
 ```bash
-bin/go_benchmark [num_processors]
+bin/go_test [num_processors]
 ```
 
 Rust:
 ```bash
 bin/rust_test [num_threads]
-# Or using Cargo
-# cargo run --release -- [num_threads]
 ```
 
 Java:
@@ -165,7 +158,7 @@ java -cp .:../json.jar JavaTest [num_processors]
 
 Python:
 ```bash
-python src/python/python_test.py [num_processors]
+python3 src/python/python_test.py [num_processors]
 ```
 
 ## Tests and Algorithms:
@@ -188,14 +181,21 @@ python src/python/python_test.py [num_processors]
 After running the tests, each implementation will create a JSON log file in the `logs` directory. To analyze and visualize the results, run:
 
 ```bash
-python process_logs.py
+python3 process_logs.py
 ```
 
 This will:
 1. Read all benchmark results from the logs directory
 2. Generate comparative statistics for all three tests
-3. Create visualization plots saved as 'benchmark_results.png'
-4. Display thread/processor count used by each implementation
+3. Display thread/processor count used by each implementation
+
+## Troubleshooting
+
+- **Segmentation Faults in C**: The C implementation has improved memory management and thread synchronization to prevent segmentation faults.
+- **Path Issues**: All implementations now handle paths properly, ensuring results are written to the correct logs directory regardless of where the executable is run from.
+- **Java Compatibility**: For older Java versions (8), compile with `-source 1.8 -target 1.8` flags.
+- **Go Path Issues**: If you encounter "module not found" errors in Go, ensure you're using the correct path structure or update the go.mod file.
+- **Rust Parallel Functions**: The Rust fibonacci_parallel function has been optimized to handle array bounds properly when working with chunks.
 
 ## Implementation Details:
 - The parallel versions utilize:
@@ -205,25 +205,10 @@ This will:
   * Python: multiprocessing for parallel processing
   * Rust: rayon for parallel iterators and join patterns
   * Java: Fork/Join framework and parallel streams
-- Code Quality:
-  * Consistent formatting across all languages
-  * Automated linting in CI pipeline
-  * Language-specific best practices enforcement
-  * Clear and maintainable code structure
-- Optimizations include:
-  * Dynamic programming for Fibonacci calculation
-  * Threshold-based parallelization for sorting
-  * Configurable thread/process count for all tests
-  * Recursion depth control for parallel QuickSort
-  * Memory-efficient chunk processing
-  * Platform-specific processor detection
-- Results logging includes:
-  * Execution times for all tests (serial and parallel)
-  * Thread/processor count used
-  * JSON format for easy parsing and comparison
-  * Visualization with comparative bar charts
-- Cross-platform support:
-  * Windows and POSIX systems supported
-  * Automatic processor count detection
-  * Consistent JSON output format
-  * Platform-specific directory handling
+
+## Performance Insights:
+
+- Fibonacci calculation is fastest in Rust, C, and C++ for serial execution.
+- Prime number calculation shows excellent parallel speedup in Go, C++, and Python.
+- QuickSort sees significant speedup in C++, Python, and Java when running in parallel.
+- The overhead of parallelization makes the parallel Fibonacci implementation slower than the serial version in most languages due to the small workload.

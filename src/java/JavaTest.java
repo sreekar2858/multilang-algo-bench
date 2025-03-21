@@ -191,7 +191,7 @@ public class JavaTest {
 
         // Fibonacci sequence test
         System.out.println("\nJava Fibonacci Sequence Test");
-        
+
         long start = System.nanoTime();
         long fibSerial = fibonacciDynamic(FIB_N);
         double serialTimeFib = (System.nanoTime() - start) / 1e9;
@@ -240,14 +240,43 @@ public class JavaTest {
 
         // Write results to JSON file
         try {
+            // Create path to logs directory in project root
+            Path currentPath = Paths.get("").toAbsolutePath();
+            Path logsPath;
+            
+            // If we're in the bin directory, go up one level
+            if (currentPath.endsWith("bin")) {
+                logsPath = currentPath.getParent().resolve("logs");
+            } else {
+                // Assume we're in the project root
+                logsPath = currentPath.resolve("logs");
+            }
+            
+            // Create logs directory if it doesn't exist
+            Files.createDirectories(logsPath);
+            
+            // Write to the logs directory with absolute path
             Files.write(
-                Paths.get("logs", "java_results.json"),
+                logsPath.resolve("java_results.json"),
                 results.toString(2).getBytes(),
                 StandardOpenOption.CREATE,
                 StandardOpenOption.TRUNCATE_EXISTING
             );
+            System.out.println("Results written to " + logsPath.resolve("java_results.json"));
         } catch (Exception e) {
             System.err.println("Error writing results: " + e.getMessage());
+            // Try writing to current directory as fallback
+            try {
+                Files.write(
+                    Paths.get("java_results.json"),
+                    results.toString(2).getBytes(),
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING
+                );
+                System.out.println("Results written to current directory as java_results.json");
+            } catch (Exception e2) {
+                System.err.println("Error writing to current directory: " + e2.getMessage());
+            }
         }
     }
 }

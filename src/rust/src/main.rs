@@ -3,6 +3,7 @@ use std::fs;
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
+use std::path::PathBuf;
 
 use rayon::prelude::*;
 use rand::Rng;
@@ -40,31 +41,75 @@ fn fibonacci_dynamic(n: u64) -> u64 {
 }
 
 fn fibonacci_chunk(start: u64, end: u64) -> Vec<u64> {
+    // Allocate a vector large enough for the full range
     let mut fib = vec![0u64; (end + 1) as usize];
+    
+    // Initialize the first two Fibonacci numbers if they're in our range
     if start <= 1 && end >= 1 {
         fib[1] = 1;
     }
+    
+    // Calculate Fibonacci numbers in the range
     for i in (2.max(start) as usize)..=(end as usize) {
-        fib[i] = fib[i - 1] + fib[i - 2];
+        if i >= 2 {
+            fib[i] = fib[i - 1] + fib[i - 2];
+        }
     }
-    fib[start as usize..=end as usize].to_vec()
+    
+    // Only return the relevant slice
+    // Make sure the slice bounds are valid
+    let start_idx = start as usize;
+    let end_idx = end as usize;
+    
+    // Clone the slice to avoid returning a reference to the local vector
+    fib[start_idx..=end_idx].to_vec()
 }
 
 fn fibonacci_parallel(n: u64) -> Vec<u64> {
+    // For small n, just compute directly
+    if n < 10 {
+        let mut result = Vec::with_capacity((n + 1) as usize);
+        for i in 0..=n {
+            if i <= 1 {
+                result.push(i);
+            } else {
+                result.push(result[(i-1) as usize] + result[(i-2) as usize]);
+            }
+        }
+        return result;
+    }
+
     let thread_count = THREAD_COUNT.load(Ordering::SeqCst);
     let chunk_size = (n / thread_count as u64).max(1);
-
-    (0..thread_count)
-        .into_par_iter()
+    
+    // Create ranges for each thread with evenly distributed work
+    let ranges: Vec<(u64, u64)> = (0..thread_count)
         .map(|i| {
             let start = i as u64 * chunk_size;
-            let end = ((i + 1) as u64 * chunk_size).min(n);
-            fibonacci_chunk(start, end)
+            let end = ((i + 1) as u64 * chunk_size - 1).min(n);
+            (start, end)
         })
-        .reduce(Vec::new, |mut acc, chunk| {
-            acc.extend(chunk);
-            acc
-        })
+        .filter(|(start, end)| start <= end) // Skip empty ranges
+        .collect();
+    
+    // Process ranges in parallel
+    let chunks: Vec<Vec<u64>> = ranges
+        .into_par_iter()
+        .map(|(start, end)| fibonacci_chunk(start, end))
+        .collect();
+    
+    // Combine chunks in the correct order
+    let mut result = Vec::with_capacity((n + 1) as usize);
+    for chunk in chunks {
+        result.extend(chunk);
+    }
+    
+    // Ensure we have exactly n+1 elements (0 through n)
+    if result.len() > (n + 1) as usize {
+        result.truncate((n + 1) as usize);
+    }
+    
+    result
 }
 
 fn is_prime(n: u64) -> bool {
@@ -147,9 +192,33 @@ fn main() {
     const SORT_SIZE: usize = 1_000_000;
     const FIB_N: u64 = 35;
 
-    // Create logs directory if it doesn't exist
-    fs::create_dir_all("logs")
-        .unwrap_or_else(|e| println!("Warning: Could not create logs directory: {}", e));
+    // Create logs directory with robust path handling
+    let logs_dir = {
+        // Get current executable path
+        if let Ok(exe_path) = env::current_exe() {
+            // Get parent directory (bin)
+            if let Some(exe_dir) = exe_path.parent() {
+                // Go up one level to project root
+                if let Some(project_dir) = exe_dir.parent() {
+                    // Create logs dir path
+                    let logs_path = project_dir.join("logs");
+                    fs::create_dir_all(&logs_path).unwrap_or_else(|e| {
+                        eprintln!("Warning: Could not create logs directory: {}", e);
+                    });
+                    logs_path
+                } else {
+                    // Fallback to current directory
+                    PathBuf::from("logs")
+                }
+            } else {
+                // Fallback to current directory
+                PathBuf::from("logs")
+            }
+        } else {
+            // Fallback to current directory
+            PathBuf::from("logs")
+        }
+    };
 
     println!("\nRust Fibonacci Test");
 
@@ -191,7 +260,7 @@ fn main() {
     let parallel_time_sort = start.elapsed().as_secs_f64();
     println!("Parallel Time: {:.4} seconds", parallel_time_sort);
 
-    // Write results to JSON file
+    // Write results to JSON file with robust path
     let results = json!({
         "language": "Rust",
         "thread_count": THREAD_COUNT.load(Ordering::SeqCst),
@@ -203,9 +272,19 @@ fn main() {
         "sort_parallel": parallel_time_sort
     });
 
-    fs::write(
-        Path::new("../../logs").join("rust_results.json"),
-        serde_json::to_string_pretty(&results).unwrap(),
-    )
-    .unwrap_or_else(|e| println!("Error writing results: {}", e));
+    // First try the logs_dir path
+    let result = fs::write(logs_dir.join("rust_results.json"), 
+                         serde_json::to_string_pretty(&results).unwrap());
+    
+    if let Err(e) = result {
+        // If that fails, try current directory
+        eprintln!("Error writing to logs directory: {}", e);
+        let current_dir_file = PathBuf::from("rust_results.json");
+        fs::write(&current_dir_file, serde_json::to_string_pretty(&results).unwrap())
+            .unwrap_or_else(|e2| {
+                eprintln!("Error writing results: {}", e2);
+            });
+    } else {
+        println!("Results written to {}", logs_dir.join("rust_results.json").display());
+    }
 }

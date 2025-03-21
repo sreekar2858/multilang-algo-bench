@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"io/ioutil"
 )
 
 // Global variable for process count
@@ -240,8 +241,30 @@ func main() {
 		fibN       = 35
 	)
 
-	// Create logs directory if it doesn't exist
-	os.MkdirAll("logs", 0755)
+	// Create logs directory with absolute path from working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Error getting current directory:", err)
+	}
+	
+	// Use absolute path to logs directory in project root
+	var logsPath string
+	if filepath.Base(cwd) == "go" {
+		// If we're in the go directory
+		logsPath = filepath.Join(cwd, "../../logs")
+	} else if filepath.Base(cwd) == "bin" {
+		// If we're in the bin directory
+		logsPath = filepath.Join(cwd, "../logs")
+	} else {
+		// Assume we're in the project root
+		logsPath = filepath.Join(cwd, "logs")
+	}
+	
+	// Make sure the directory exists
+	err = os.MkdirAll(logsPath, 0755)
+	if err != nil {
+		fmt.Println("Error creating logs directory:", err)
+	}
 
 	results := BenchmarkResults{
 		Language:     "Go",
@@ -251,27 +274,31 @@ func main() {
 	// Fibonacci sequence test
 	fmt.Println("\nGo Fibonacci Sequence Test")
 	start := time.Now()
-	fibSerial := fibonacciDynamic(fibN)
+	fibVal := fibonacciDynamic(fibN)
 	results.FibonacciSerial = time.Since(start).Seconds()
 	fmt.Printf("Serial Time (Dynamic): %.4f seconds\n", results.FibonacciSerial)
+	fmt.Printf("Fibonacci(%d) = %d\n", fibN, fibVal)
 
 	start = time.Now()
-	fibParallel := fibonacciParallel(fibN)
+	fibSlice := fibonacciParallel(fibN)
 	results.FibonacciParallel = time.Since(start).Seconds()
 	fmt.Printf("Parallel Time: %.4f seconds\n", results.FibonacciParallel)
+	fmt.Printf("Fibonacci sequence length: %d\n", len(fibSlice))
 
 	// Prime numbers test
 	fmt.Println("\nGo Prime Numbers Test")
 
 	start = time.Now()
-	primesSerial := findPrimesSerial(primeLimit)
+	primes := findPrimesSerial(primeLimit)
 	results.PrimesSerial = time.Since(start).Seconds()
 	fmt.Printf("Serial Time: %.4f seconds\n", results.PrimesSerial)
+	fmt.Printf("Found %d primes up to %d\n", len(primes), primeLimit)
 
 	start = time.Now()
-	primesParallel := findPrimesParallel(primeLimit)
+	primesPar := findPrimesParallel(primeLimit)
 	results.PrimesParallel = time.Since(start).Seconds()
 	fmt.Printf("Parallel Time: %.4f seconds\n", results.PrimesParallel)
+	fmt.Printf("Found %d primes (parallel) up to %d\n", len(primesPar), primeLimit)
 
 	// QuickSort test
 	fmt.Println("\nGo QuickSort Test")
@@ -294,17 +321,19 @@ func main() {
 	results.SortParallel = time.Since(start).Seconds()
 	fmt.Printf("Parallel Time: %.4f seconds\n", results.SortParallel)
 
-	// Write results to JSON file
-	resultsFile, err := os.Create(filepath.Join("logs", "go_results.json"))
+	// Write results to JSON file with absolute path
+	resultsJSON, _ := json.MarshalIndent(results, "", "  ")
+	err = ioutil.WriteFile(filepath.Join(logsPath, "go_results.json"), resultsJSON, 0644)
 	if err != nil {
-		fmt.Printf("Error creating results file: %v\n", err)
-		return
-	}
-	defer resultsFile.Close()
-
-	encoder := json.NewEncoder(resultsFile)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(results); err != nil {
-		fmt.Printf("Error writing results: %v\n", err)
+		fmt.Printf("Error writing results to %s: %v\n", filepath.Join(logsPath, "go_results.json"), err)
+		// Fallback to current directory if that fails
+		err = ioutil.WriteFile("go_results.json", resultsJSON, 0644)
+		if err != nil {
+			fmt.Printf("Fallback error writing results to current directory: %v\n", err)
+		} else {
+			fmt.Println("Results written to current directory as go_results.json")
+		}
+	} else {
+		fmt.Printf("Results written to %s\n", filepath.Join(logsPath, "go_results.json"))
 	}
 }
