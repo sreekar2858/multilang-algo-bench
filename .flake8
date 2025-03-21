@@ -1,0 +1,8 @@
+[flake8]
+max-line-length = 100
+extend-ignore = E203
+exclude = .git,__pycache__,build,dist
+per-file-ignores =
+    # Allow print statements in the main test script
+    src/python/python_test.py: T201
+max-complexity = 10

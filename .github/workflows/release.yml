@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up build environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential gcc g++
+          python -m pip install --upgrade pip
+          pip install pandas matplotlib
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '^1.24'
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Build all executables
+        run: |
+          mkdir -p bin
+          
+          # Build C
+          cd src/c
+          gcc -O3 c_test.c -o ../../bin/c_test -pthread -lm
+          cd ../..
+          
+          # Build C++
+          cd src/cpp
+          g++ -O3 -std=c++17 cpp_test.cpp -o ../../bin/cpp_test -pthread
+          cd ../..
+          
+          # Build Go
+          cd src/go
+          go build -o ../../bin/go_benchmark go_benchmark.go
+          cd ../..
+          
+          # Build Rust
+          cd src/rust
+          cargo build --release
+          cp target/release/speed_comparison ../../bin/rust_test
+          cd ../..
+          
+          # Build Java
+          cd src/java
+          javac -cp ../../json.jar JavaTest.java -d ../../bin
+          cd ../..
+          
+          # Create archives
+          cd bin
+          tar czf ../speed-comparison-linux.tar.gz *
+          cd ..
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./speed-comparison-linux.tar.gz
+          asset_name: speed-comparison-linux.tar.gz
+          asset_content_type: application/gzip
