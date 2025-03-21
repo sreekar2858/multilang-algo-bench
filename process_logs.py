@@ -4,6 +4,7 @@ from pathlib import Path
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+import re
 
 
 def process_logs():
@@ -465,6 +466,7 @@ def create_speedup_plot(results, languages, tests):
     plt.savefig('speedup_comparison.png', dpi=300)
     print("Speedup comparison visualization saved as speedup_comparison.png")
 
+<<<<<<< HEAD
 
 def create_mpi_comparison_plot(results, mpi_langs, regular_langs):
     """Create bar plots comparing MPI and non-MPI implementations"""
@@ -474,6 +476,105 @@ def create_mpi_comparison_plot(results, mpi_langs, regular_langs):
         base_lang = re.sub(r' MPI$', '', mpi_lang)
         if base_lang in regular_langs:
             mpi_pairs.append((base_lang, mpi_lang))
+=======
+def update_readme_performance_tables(comparison_data):
+    """Updates the performance tables in README.md with the latest benchmark results"""
+    readme_path = Path(__file__).parent / "README.md"
+    
+    if not readme_path.exists():
+        print("README.md not found, skipping update.")
+        return
+    
+    with open(readme_path, 'r') as f:
+        readme_content = f.read()
+    
+    # Format serial implementation performance table
+    serial_table = "| Language | Fibonacci | Prime Numbers | QuickSort |\n"
+    serial_table += "|----------|-----------|---------------|----------|\n"
+    
+    for lang in ['rust', 'cpp', 'c', 'go', 'java', 'python']:
+        lang_name = lang.capitalize()
+        if lang == 'cpp':
+            lang_name = "C++"
+        
+        fib_value = comparison_data[lang]['fibonacci']['serial']
+        prime_value = comparison_data[lang]['primes']['serial']
+        sort_value = comparison_data[lang]['sort']['serial']
+        
+        serial_table += f"| {lang_name}     | {fib_value:.2f}x   | {prime_value:.2f}x         | {sort_value:.2f}x    |\n"
+    
+    # Format parallel implementation performance table
+    parallel_table = "| Language | Fibonacci | Prime Numbers | QuickSort |\n"
+    parallel_table += "|----------|-----------|---------------|----------|\n"
+    
+    for lang in ['rust', 'cpp', 'c', 'go', 'java', 'python']:
+        lang_name = lang.capitalize()
+        if lang == 'cpp':
+            lang_name = "C++"
+        
+        fib_value = comparison_data[lang]['fibonacci']['parallel']
+        prime_value = comparison_data[lang]['primes']['parallel']
+        sort_value = comparison_data[lang]['sort']['parallel']
+        
+        parallel_table += f"| {lang_name}     | {fib_value:.2f}x   | {prime_value:.2f}x         | {sort_value:.2f}x    |\n"
+    
+    # Generate key observations based on the data
+    observations = []
+    
+    # Find highest serial fibonacci
+    serial_fib_max = max(comparison_data.items(), key=lambda x: x[1]['fibonacci']['serial'])
+    observations.append(f"- In serial implementations, {serial_fib_max[0].capitalize() if serial_fib_max[0] != 'cpp' else 'C++'} shows exceptional performance for Fibonacci ({serial_fib_max[1]['fibonacci']['serial']:.2f}x faster than Python)")
+    
+    # Find highest parallel quicksort
+    parallel_qs_max = max(comparison_data.items(), key=lambda x: x[1]['sort']['parallel'])
+    observations.append(f"- {parallel_qs_max[0].capitalize() if parallel_qs_max[0] != 'cpp' else 'C++'} excels at QuickSort in parallel implementation ({parallel_qs_max[1]['sort']['parallel']:.2f}x faster than Python)")
+    
+    # Find highest prime numbers (both)
+    serial_prime_max = max(comparison_data.items(), key=lambda x: x[1]['primes']['serial'])
+    parallel_prime_max = max(comparison_data.items(), key=lambda x: x[1]['primes']['parallel'])
+    
+    if serial_prime_max[0] == parallel_prime_max[0]:
+        observations.append(f"- For prime numbers, {serial_prime_max[0].capitalize() if serial_prime_max[0] != 'cpp' else 'C++'} leads in both serial ({serial_prime_max[1]['primes']['serial']:.2f}x) and parallel ({parallel_prime_max[1]['primes']['parallel']:.2f}x) performance")
+    else:
+        observations.append(f"- {serial_prime_max[0].capitalize() if serial_prime_max[0] != 'cpp' else 'C++'} has the best serial prime number performance ({serial_prime_max[1]['primes']['serial']:.2f}x), while {parallel_prime_max[0].capitalize() if parallel_prime_max[0] != 'cpp' else 'C++'} leads in parallel ({parallel_prime_max[1]['primes']['parallel']:.2f}x)")
+    
+    # Find highest parallel fibonacci
+    parallel_fib_max = max(comparison_data.items(), key=lambda x: x[1]['fibonacci']['parallel'])
+    observations.append(f"- {parallel_fib_max[0].capitalize() if parallel_fib_max[0] != 'cpp' else 'C++'} shows the best parallel Fibonacci performance ({parallel_fib_max[1]['fibonacci']['parallel']:.2f}x faster than Python)")
+    
+    # Check for good Java performance in parallel quicksort (common case)
+    if comparison_data['java']['sort']['parallel'] > 25:
+        observations.append(f"- Java maintains strong QuickSort performance in parallel implementation ({comparison_data['java']['sort']['parallel']:.2f}x faster than Python)")
+    
+    observations_text = "\n".join(observations)
+    
+    # Note about the data
+    note_text = "Note: Higher numbers indicate better performance relative to Python. Values are automatically extracted from the performance_ratio.json file."
+    
+    # Replace the performance sections using regex to find the correct location
+    serial_pattern = r"### Serial Implementation Performance\s*\|\s*Language.*?\|\s*Python\s*\|\s*1\.00x\s*\|\s*1\.00x\s*\|\s*1\.00x\s*\|"
+    parallel_pattern = r"### Parallel Implementation Performance\s*\|\s*Language.*?\|\s*Python\s*\|\s*1\.00x\s*\|\s*1\.00x\s*\|\s*1\.00x\s*\|"
+    observations_pattern = r"Key observations:.*?Note:"
+    
+    new_serial_section = "### Serial Implementation Performance\n\n" + serial_table
+    new_parallel_section = "### Parallel Implementation Performance\n\n" + parallel_table
+    new_observations_section = "Key observations:\n" + observations_text + "\n\n" + note_text
+    
+    # Replace sections in the README
+    readme_content = re.sub(serial_pattern, new_serial_section, readme_content, flags=re.DOTALL)
+    readme_content = re.sub(parallel_pattern, new_parallel_section, readme_content, flags=re.DOTALL)
+    readme_content = re.sub(observations_pattern, new_observations_section, readme_content, flags=re.DOTALL)
+    
+    # Write the updated README file
+    with open(readme_path, 'w') as f:
+        f.write(readme_content)
+    
+    print("README.md performance tables updated successfully with the latest benchmark results.")
+
+def main():
+    # Read all results
+    results = read_json_files()
+>>>>>>> 82243768be887e622aebfbf4e0cd541694e77a30
     
     if not mpi_pairs:
         return  # No MPI pairs found
@@ -482,6 +583,7 @@ def create_mpi_comparison_plot(results, mpi_langs, regular_langs):
     fig, axes = plt.subplots(len(mpi_pairs), 3, figsize=(15, len(mpi_pairs) * 5))
     fig.suptitle('MPI vs Regular Implementation Comparison', fontsize=16)
     
+<<<<<<< HEAD
     # Set test names 
     tests = ["Fibonacci", "Primes", "QuickSort"]
     
@@ -564,6 +666,14 @@ def create_mpi_comparison_plot(results, mpi_langs, regular_langs):
     plt.savefig('mpi_comparison.png', dpi=300)
     print("MPI comparison visualization saved as mpi_comparison.png")
 
+=======
+    # Save comparison data
+    with open('performance_ratio.json', 'w') as f:
+        json.dump(comparison, f, indent=2)
+    
+    # Update README.md with the latest performance data
+    update_readme_performance_tables(comparison)
+>>>>>>> 82243768be887e622aebfbf4e0cd541694e77a30
 
 if __name__ == "__main__":
     # Create logs directory if it doesn't exist
