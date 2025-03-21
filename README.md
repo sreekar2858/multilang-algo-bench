@@ -13,6 +13,7 @@ A comprehensive benchmarking suite that implements and compares the performance 
 - 📊 Performance benchmarking and comparison across 6 languages
 - 📈 Visualization tools for analyzing results
 - 🛠️ Configurable thread/processor count for parallel tests
+- ✨ Consistent code formatting and linting across all languages
 
 Speed Comparison Tests
 =====================
@@ -23,7 +24,6 @@ This project implements three algorithmic tests (Fibonacci sequence, prime numbe
 
 ```
 Speed_Comparison/
-├── bin/              # Compiled executables
 ├── logs/             # Benchmark results in JSON format
 ├── src/              # Source code organized by language
 │   ├── c/            # C implementation
@@ -35,18 +35,25 @@ Speed_Comparison/
 ├── benchmark_results.png  # Visualization of benchmark results
 ├── json.jar          # JSON library for Java
 ├── process_logs.py   # Script to process and visualize results
+├── .clang-format     # C/C++ formatting rules
+├── .flake8          # Python linting configuration
+├── checkstyle.xml   # Java style checking rules
+├── pyproject.toml   # Python black formatter config
+├── rustfmt.toml     # Rust formatting rules
 └── README.md         # This file
 ```
 
 ## Prerequisites:
 - C: GCC or compatible C compiler with pthread support
 - C++: A modern C++ compiler (C++17 or later)
-- Go: Go 1.11 or later
+- Go: Go 1.24.1 or later
 - Python: Python 3.6 or later with pandas and matplotlib
 - Rust: Rust 1.31 or later (needs Cargo)
-- Java: JDK 8 or later with org.json library
+- Java: JDK 11 or later with org.json library
 
-For Rust, you'll need to add these dependencies to Cargo.toml:
+### Dependencies
+
+For Rust, you'll need these dependencies (already in Cargo.toml):
 ```toml
 [dependencies]
 rayon = "1.7"
@@ -55,12 +62,27 @@ serde_json = "1.0"
 num_cpus = "1.0"
 ```
 
-For Java, you'll need the org.json library in your classpath.
-
 For Python, install required packages:
 ```bash
-pip install pandas matplotlib
+pip install pandas matplotlib flake8 black
 ```
+
+For Java:
+- org.json library (provided as json.jar)
+- checkstyle for code quality
+
+## Development Setup
+
+### Code Quality Tools
+
+The project uses several linting and formatting tools:
+- C/C++: clang-format with Google style
+- Python: black formatter and flake8 linter
+- Go: gofmt and go vet
+- Java: checkstyle
+- Rust: rustfmt and clippy
+
+All formatting configurations are provided in the respective config files (.clang-format, pyproject.toml, etc.).
 
 ## Quick Start
 
@@ -74,37 +96,40 @@ cd multilang-algo-bench
 
 C:
 ```bash
-cd src/c
-gcc -O3 c_test.c -o ../../bin/c_test -pthread -lm
+gcc -O3 src/c/c_test.c -o c_test -pthread -lm
+./c_test [num_threads]
 ```
 
 C++:
 ```bash
-cd src/cpp
-g++ -O3 -std=c++17 cpp_test.cpp -o ../../bin/cpp_test -pthread
+g++ -O3 -std=c++17 src/cpp/cpp_test.cpp -o cpp_test -pthread
+./cpp_test [num_threads]
 ```
 
 Go:
 ```bash
 cd src/go
-go build -o ../../bin/go_benchmark go_benchmark.go
+go build -o go_test benchmark_test.go
+./go_test [num_processors]
 ```
 
 Rust:
 ```bash
 cd src/rust
-rustc -O rust_test.rs -o ../../bin/rust_test
-# Or using Cargo if you have a Cargo.toml
-# cargo build --release
+cargo build --release
+cargo run --release -- [num_threads]
 ```
 
 Java:
 ```bash
-cd src/java
-javac -cp ../../json.jar JavaTest.java -d ../../bin
+javac -cp json.jar src/java/JavaTest.java
+java -cp json.jar:. JavaTest [num_processors]
 ```
 
-Python doesn't need compilation.
+Python:
+```bash
+python src/python/python_test.py [num_processors]
+```
 
 ## Running the Tests:
 
@@ -180,6 +205,11 @@ This will:
   * Python: multiprocessing for parallel processing
   * Rust: rayon for parallel iterators and join patterns
   * Java: Fork/Join framework and parallel streams
+- Code Quality:
+  * Consistent formatting across all languages
+  * Automated linting in CI pipeline
+  * Language-specific best practices enforcement
+  * Clear and maintainable code structure
 - Optimizations include:
   * Dynamic programming for Fibonacci calculation
   * Threshold-based parallelization for sorting
