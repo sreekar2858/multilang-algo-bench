@@ -1,5 +1,5 @@
 import json
-import pandas as pd
+import re
 from pathlib import Path
 import os
 import matplotlib.pyplot as plt
@@ -16,158 +16,592 @@ def process_logs():
         "Threads": [],
     }
 
+    # Dictionary to store consolidated results for JSON export
+    consolidated_metrics = {
+        "absolute_times": {},
+        "speedup_factors": {},
+        "mpi_comparisons": {},
+        "relative_to_python": {}
+    }
+
     # Get the root directory and logs directory
     script_dir = Path(__file__).parent
     log_dir = script_dir / "logs"
-    
+
     # Process all log files
     for log_file in log_dir.glob("*.json"):
         with open(log_file) as f:
-            data = json.load(f)
-            language = data["language"]
-            threads = data.get("thread_count", data.get("process_count", 0))
+            try:
+                data = json.load(f)
+                language = data["language"]
+                threads = data.get("thread_count", data.get("process_count", 0))
 
-            # Process tests only if the data exists
-            if "fibonacci_serial" in data and "fibonacci_parallel" in data:
-                results["Language"].extend([language, language])
-                results["Test"].extend(["Fibonacci", "Fibonacci"])
-                results["Mode"].extend(["Serial", "Parallel"])
-                results["Time"].extend([data["fibonacci_serial"], data["fibonacci_parallel"]])
-                results["Threads"].extend([threads, threads])
+                # Initialize language entry in consolidated metrics
+                if language not in consolidated_metrics["absolute_times"]:
+                    consolidated_metrics["absolute_times"][language] = {
+                        "threads": threads,
+                        "fibonacci": {"serial": None, "parallel": None},
+                        "primes": {"serial": None, "parallel": None},
+                        "quicksort": {"serial": None, "parallel": None}
+                    }
 
-            if "primes_serial" in data and "primes_parallel" in data:
-                results["Language"].extend([language, language])
-                results["Test"].extend(["Primes", "Primes"])
-                results["Mode"].extend(["Serial", "Parallel"])
-                results["Time"].extend([data["primes_serial"], data["primes_parallel"]])
-                results["Threads"].extend([threads, threads])
+                # Process tests only if the data exists
+                if "fibonacci_serial" in data and "fibonacci_parallel" in data:
+                    results["Language"].extend([language, language])
+                    results["Test"].extend(["Fibonacci", "Fibonacci"])
+                    results["Mode"].extend(["Serial", "Parallel"])
+                    results["Time"].extend([data["fibonacci_serial"], data["fibonacci_parallel"]])
+                    results["Threads"].extend([threads, threads])
+                    
+                    # Add to consolidated metrics
+                    consolidated_metrics["absolute_times"][language]["fibonacci"]["serial"] = data["fibonacci_serial"]
+                    consolidated_metrics["absolute_times"][language]["fibonacci"]["parallel"] = data["fibonacci_parallel"]
 
-            if "sort_serial" in data and "sort_parallel" in data:
-                results["Language"].extend([language, language])
-                results["Test"].extend(["QuickSort", "QuickSort"])
-                results["Mode"].extend(["Serial", "Parallel"])
-                results["Time"].extend([data["sort_serial"], data["sort_parallel"]])
-                results["Threads"].extend([threads, threads])
+                if "primes_serial" in data and "primes_parallel" in data:
+                    results["Language"].extend([language, language])
+                    results["Test"].extend(["Primes", "Primes"])
+                    results["Mode"].extend(["Serial", "Parallel"])
+                    results["Time"].extend([data["primes_serial"], data["primes_parallel"]])
+                    results["Threads"].extend([threads, threads])
+                    
+                    # Add to consolidated metrics
+                    consolidated_metrics["absolute_times"][language]["primes"]["serial"] = data["primes_serial"]
+                    consolidated_metrics["absolute_times"][language]["primes"]["parallel"] = data["primes_parallel"]
 
-    # Convert to DataFrame
-    df = pd.DataFrame(results)
+                if "sort_serial" in data and "sort_parallel" in data:
+                    results["Language"].extend([language, language])
+                    results["Test"].extend(["QuickSort", "QuickSort"])
+                    results["Mode"].extend(["Serial", "Parallel"])
+                    results["Time"].extend([data["sort_serial"], data["sort_parallel"]])
+                    results["Threads"].extend([threads, threads])
+
+                    # Add to consolidated metrics
+                    consolidated_metrics["absolute_times"][language]["quicksort"]["serial"] = data["sort_serial"]
+                    consolidated_metrics["absolute_times"][language]["quicksort"]["parallel"] = data["sort_parallel"]
+            except json.JSONDecodeError:
+                print(f"Warning: Could not parse JSON in {log_file}")
+                continue
 
     # Print summary statistics
     print("\nSummary Statistics:")
     print("==================")
     for test in ["Fibonacci", "Primes", "QuickSort"]:
-        test_df = df[df["Test"] == test]
-        if len(test_df) > 0:  # Only print statistics if we have data for this test
-            print(f"\n{test} Test:")
-            for mode in ["Serial", "Parallel"]:
-                mode_df = test_df[test_df["Mode"] == mode]
-                if len(mode_df) > 0:  # Only print mode if we have data
-                    print(f"\n{mode} Mode:")
-                    print(
-                        mode_df.sort_values("Time")[["Language", "Time", "Threads"]].to_string(
-                            index=False, float_format=lambda x: "{:.6f}".format(x)
-                        )
-                    )
+        print(f"\n{test} Test:")
+        for mode in ["Serial", "Parallel"]:
+            print(f"\n{mode} Mode:")
+            
+            # Get the rows for this test and mode
+            rows = []
+            for i in range(len(results["Language"])):
+                if results["Test"][i] == test and results["Mode"][i] == mode:
+                    rows.append({
+                        "Language": results["Language"][i],
+                        "Time": results["Time"][i],
+                        "Threads": results["Threads"][i]
+                    })
+            
+            # Sort rows by time
+            rows.sort(key=lambda x: x["Time"])
+            
+            # Format and print
+            if rows:
+                # Print header
+                print(f"{'Language':<15} {'Time':<15} {'Threads'}")
+                print("-" * 40)
+                
+                # Print rows
+                for row in rows:
+                    print(f"{row['Language']:<15} {row['Time']:<15.6f} {row['Threads']}")
+            else:
+                print("No data available")
                     
     # Calculate speedup for each language and test
     print("\nSpeedup Factors (Serial/Parallel):")
     print("================================")
-    languages = df["Language"].unique()
-    for language in languages:
+    
+    # Group by language and test
+    languages = set(results["Language"])
+    
+    for language in sorted(languages):
+        # Initialize speedup entry in consolidated metrics
+        if language not in consolidated_metrics["speedup_factors"]:
+            consolidated_metrics["speedup_factors"][language] = {
+                "fibonacci": None,
+                "primes": None,
+                "quicksort": None
+            }
+        
         print(f"\n{language}:")
         for test in ["Fibonacci", "Primes", "QuickSort"]:
-            lang_test_df = df[(df["Language"] == language) & (df["Test"] == test)]
-            if len(lang_test_df) == 2:  # Only if we have both serial and parallel
-                serial_time = lang_test_df[lang_test_df["Mode"] == "Serial"]["Time"].iloc[0]
-                parallel_time = lang_test_df[lang_test_df["Mode"] == "Parallel"]["Time"].iloc[0]
+            test_key = test.lower()
+            if test_key == "quicksort":
+                test_key = "quicksort"
+                
+            # Find serial and parallel times for this language and test
+            serial_time = None
+            parallel_time = None
+            
+            for i in range(len(results["Language"])):
+                if results["Language"][i] == language and results["Test"][i] == test:
+                    if results["Mode"][i] == "Serial":
+                        serial_time = results["Time"][i]
+                    elif results["Mode"][i] == "Parallel":
+                        parallel_time = results["Time"][i]
+            
+            if serial_time is not None and parallel_time is not None:
                 if parallel_time > 0:  # Avoid division by zero
                     speedup = serial_time / parallel_time
                     print(f"  {test}: {speedup:.2f}x")
+                    
+                    # Add to consolidated metrics
+                    consolidated_metrics["speedup_factors"][language][test_key] = speedup
                 else:
                     print(f"  {test}: ∞ (parallel time ≈ 0)")
+                    
+                    # Add to consolidated metrics (using infinity)
+                    consolidated_metrics["speedup_factors"][language][test_key] = float('inf')
+    
+    # Group MPI and non-MPI implementations for comparison
+    print("\nMPI vs Non-MPI Comparison:")
+    print("=========================")
+    
+    # Find matching MPI and non-MPI implementations
+    mpi_langs = [lang for lang in languages if "MPI" in lang]
+    regular_langs = [lang for lang in languages if "MPI" not in lang]
+    
+    # For each MPI implementation, find its regular counterpart
+    for mpi_lang in mpi_langs:
+        # Extract the base language name (remove " MPI" suffix)
+        base_lang = re.sub(r' MPI$', '', mpi_lang)
+        
+        # Find the corresponding regular implementation
+        if base_lang in regular_langs:
+            # Initialize MPI comparison entry in consolidated metrics
+            comparison_key = f"{base_lang}_vs_{mpi_lang.replace(' ', '_')}"
+            consolidated_metrics["mpi_comparisons"][comparison_key] = {
+                "fibonacci": {},
+                "primes": {},
+                "quicksort": {}
+            }
+            
+            print(f"\n{base_lang} vs {mpi_lang}:")
+            
+            for test in ["Fibonacci", "Primes", "QuickSort"]:
+                test_key = test.lower()
+                if test_key == "quicksort":
+                    test_key = "quicksort"
+                    
+                # Find serial and parallel times for both implementations
+                mpi_serial = None
+                mpi_parallel = None
+                reg_serial = None
+                reg_parallel = None
+                
+                for i in range(len(results["Language"])):
+                    if results["Test"][i] == test:
+                        if results["Language"][i] == mpi_lang:
+                            if results["Mode"][i] == "Serial":
+                                mpi_serial = results["Time"][i]
+                            elif results["Mode"][i] == "Parallel":
+                                mpi_parallel = results["Time"][i]
+                        elif results["Language"][i] == base_lang:
+                            if results["Mode"][i] == "Serial":
+                                reg_serial = results["Time"][i]
+                            elif results["Mode"][i] == "Parallel":
+                                reg_parallel = results["Time"][i]
+                
+                # Calculate speedup ratios
+                if all(x is not None for x in [mpi_serial, mpi_parallel, reg_serial, reg_parallel]):
+                    mpi_speedup = mpi_serial / mpi_parallel if mpi_parallel > 0 else float('inf')
+                    reg_speedup = reg_serial / reg_parallel if reg_parallel > 0 else float('inf')
+                    
+                    print(f"  {test}:")
+                    print(f"    {base_lang} Serial: {reg_serial:.6f}s, Parallel: {reg_parallel:.6f}s, Speedup: {reg_speedup:.2f}x")
+                    print(f"    {mpi_lang} Serial: {mpi_serial:.6f}s, Parallel: {mpi_parallel:.6f}s, Speedup: {mpi_speedup:.2f}x")
+                    
+                    # Calculate MPI vs regular ratio for parallel performance
+                    if reg_parallel > 0 and mpi_parallel > 0:
+                        parallel_ratio = reg_parallel / mpi_parallel
+                        print(f"    MPI Parallel Performance Gain: {parallel_ratio:.2f}x")
+                        
+                        # Add to consolidated metrics
+                        consolidated_metrics["mpi_comparisons"][comparison_key][test_key] = {
+                            "regular": {
+                                "serial": reg_serial,
+                                "parallel": reg_parallel,
+                                "speedup": reg_speedup
+                            },
+                            "mpi": {
+                                "serial": mpi_serial,
+                                "parallel": mpi_parallel,
+                                "speedup": mpi_speedup
+                            },
+                            "mpi_performance_gain": parallel_ratio
+                        }
+
+    return consolidated_metrics, results
+
 
 def read_json_files(logs_dir='logs'):
+    """Read all JSON results files from the logs directory"""
     results = {}
-    for file in os.listdir(logs_dir):
-        if file.endswith('_results.json'):
-            with open(os.path.join(logs_dir, file), 'r') as f:
-                results[file.split('_')[0]] = json.load(f)
+    try:
+        for file in os.listdir(logs_dir):
+            if file.endswith('_results.json'):
+                try:
+                    with open(os.path.join(logs_dir, file), 'r') as f:
+                        key = file.split('_')[0]
+                        # Handle MPI variants by including 'mpi' in the key if present
+                        if 'mpi' in file:
+                            key += '_mpi'
+                        results[key] = json.load(f)
+                except json.JSONDecodeError:
+                    print(f"Warning: Could not parse JSON in {file}")
+                    continue
+    except FileNotFoundError:
+        print(f"Warning: Logs directory '{logs_dir}' not found")
+    
     return results
 
-def create_comparison_data(results):
-    # Use Python as the baseline for comparison
+
+def create_comparison_data(results, consolidated_metrics):
+    """Create relative performance comparison data using Python as baseline"""
+    # Check if Python results exist to use as baseline
+    if 'python' not in results:
+        print("Python results not found, can't create relative comparison")
+        return
+    
     baseline = results['python']
-    comparison = {}
+    consolidated_metrics["relative_to_python"] = {}
     
     for lang, data in results.items():
-        comparison[lang] = {
-            'primes': {
-                'serial': baseline['primes_serial'] / data['primes_serial'],
-                'parallel': baseline['primes_parallel'] / data['primes_parallel']
-            },
-            'sort': {
-                'serial': baseline['sort_serial'] / data['sort_serial'],
-                'parallel': baseline['sort_parallel'] / data['sort_parallel']
-            },
-            'fibonacci': {
-                'serial': baseline['fibonacci_serial'] / data['fibonacci_serial'],
-                'parallel': baseline['fibonacci_parallel'] / data['fibonacci_parallel']
-            }
+        # Skip if required data is missing
+        if not all(key in data for key in ["fibonacci_serial", "fibonacci_parallel", 
+                                          "primes_serial", "primes_parallel", 
+                                          "sort_serial", "sort_parallel"]):
+            continue
+        
+        # Initialize language in relative performance metrics
+        consolidated_metrics["relative_to_python"][lang] = {
+            "fibonacci": {"serial": None, "parallel": None},
+            "primes": {"serial": None, "parallel": None},
+            "quicksort": {"serial": None, "parallel": None}
         }
-    
-    return comparison
+        
+        # Process Fibonacci test
+        if baseline["fibonacci_serial"] > 0 and data["fibonacci_serial"] > 0:
+            relative_perf = baseline["fibonacci_serial"] / data["fibonacci_serial"]
+            consolidated_metrics["relative_to_python"][lang]["fibonacci"]["serial"] = relative_perf
+        
+        if baseline["fibonacci_parallel"] > 0 and data["fibonacci_parallel"] > 0:
+            relative_perf = baseline["fibonacci_parallel"] / data["fibonacci_parallel"]
+            consolidated_metrics["relative_to_python"][lang]["fibonacci"]["parallel"] = relative_perf
+        
+        # Process Primes test
+        if baseline["primes_serial"] > 0 and data["primes_serial"] > 0:
+            relative_perf = baseline["primes_serial"] / data["primes_serial"]
+            consolidated_metrics["relative_to_python"][lang]["primes"]["serial"] = relative_perf
+        
+        if baseline["primes_parallel"] > 0 and data["primes_parallel"] > 0:
+            relative_perf = baseline["primes_parallel"] / data["primes_parallel"]
+            consolidated_metrics["relative_to_python"][lang]["primes"]["parallel"] = relative_perf
+        
+        # Process QuickSort test
+        if baseline["sort_serial"] > 0 and data["sort_serial"] > 0:
+            relative_perf = baseline["sort_serial"] / data["sort_serial"]
+            consolidated_metrics["relative_to_python"][lang]["quicksort"]["serial"] = relative_perf
+        
+        if baseline["sort_parallel"] > 0 and data["sort_parallel"] > 0:
+            relative_perf = baseline["sort_parallel"] / data["sort_parallel"]
+            consolidated_metrics["relative_to_python"][lang]["quicksort"]["parallel"] = relative_perf
 
-def plot_results(results):
-    languages = list(results.keys())
-    tests = ['primes', 'sort', 'fibonacci']
-    x = np.arange(len(languages))
-    width = 0.2
+
+def create_bar_plots(results):
+    """Create bar plots to visualize benchmark results"""
+    # Extract unique languages and tests
+    languages = list(sorted(set(results["Language"])))
+    tests = ["Fibonacci", "Primes", "QuickSort"]
     
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
+    # Set up plot colors and width
+    colors = {
+        "Serial": "blue",
+        "Parallel": "orange"
+    }
+    bar_width = 0.35
     
-    # Serial tests
+    # Create figure with 3 subplots (one for each test)
+    fig, axes = plt.subplots(len(tests), 1, figsize=(12, 15))
+    fig.suptitle('Benchmark Results: Serial vs Parallel Execution Time', fontsize=16)
+    
+    # Create subplots for each test
     for i, test in enumerate(tests):
-        times = [results[lang][f'{test}_serial'] for lang in languages]
-        ax1.bar(x + i*width, times, width, label=test.capitalize())
+        ax = axes[i]
+        
+        # Filter data for this test
+        test_data = {
+            "Language": [],
+            "Serial": [],
+            "Parallel": []
+        }
+        
+        for j, lang in enumerate(languages):
+            serial_time = None
+            parallel_time = None
+            
+            for k in range(len(results["Language"])):
+                if results["Language"][k] == lang and results["Test"][k] == test:
+                    if results["Mode"][k] == "Serial":
+                        serial_time = results["Time"][k]
+                    elif results["Mode"][k] == "Parallel":
+                        parallel_time = results["Time"][k]
+            
+            if serial_time is not None and parallel_time is not None:
+                test_data["Language"].append(lang)
+                test_data["Serial"].append(serial_time)
+                test_data["Parallel"].append(parallel_time)
+        
+        # Sort data by serial execution time
+        indices = sorted(range(len(test_data["Serial"])), key=lambda k: test_data["Serial"][k])
+        sorted_langs = [test_data["Language"][i] for i in indices]
+        sorted_serial = [test_data["Serial"][i] for i in indices]
+        sorted_parallel = [test_data["Parallel"][i] for i in indices]
+        
+        # Create x positions for bars
+        x = np.arange(len(sorted_langs))
+        
+        # Plot bars
+        ax.bar(x - bar_width/2, sorted_serial, bar_width, label='Serial', color=colors["Serial"])
+        ax.bar(x + bar_width/2, sorted_parallel, bar_width, label='Parallel', color=colors["Parallel"])
+        
+        # Add labels and legend
+        ax.set_title(f'{test} Test')
+        ax.set_xlabel('Language')
+        ax.set_ylabel('Execution Time (seconds)')
+        ax.set_xticks(x)
+        ax.set_xticklabels(sorted_langs, rotation=45)
+        ax.legend()
+        
+        # Add grid
+        ax.grid(True, linestyle='--', alpha=0.7)
+        
+        # Add value labels on top of bars
+        for j, v in enumerate(sorted_serial):
+            if v < 0.001:
+                ax.text(j - bar_width/2, v + 0.00005, f'{v:.6f}', ha='center', va='bottom', fontsize=8, rotation=90)
+            else:
+                ax.text(j - bar_width/2, v + 0.00005, f'{v:.4f}', ha='center', va='bottom', fontsize=8, rotation=90)
+        
+        for j, v in enumerate(sorted_parallel):
+            if v < 0.001:
+                ax.text(j + bar_width/2, v + 0.00005, f'{v:.6f}', ha='center', va='bottom', fontsize=8, rotation=90)
+            else:
+                ax.text(j + bar_width/2, v + 0.00005, f'{v:.4f}', ha='center', va='bottom', fontsize=8, rotation=90)
     
-    ax1.set_ylabel('Time (seconds)')
-    ax1.set_title('Serial Performance Comparison')
-    ax1.set_xticks(x + width)
-    ax1.set_xticklabels(languages)
-    ax1.legend()
+    plt.tight_layout(rect=[0, 0, 1, 0.97])
+    plt.savefig('benchmark_results.png', dpi=300)
+    print("\nVisualization saved as benchmark_results.png")
     
-    # Parallel tests
+    # Create a speedup comparison plot
+    create_speedup_plot(results, languages, tests)
+
+
+def create_speedup_plot(results, languages, tests):
+    """Create a bar plot showing speedup factors for each language and test"""
+    fig, ax = plt.subplots(figsize=(12, 8))
+    
+    # Organize data for plotting
+    plot_data = []
+    for lang in sorted(languages):
+        lang_data = {"Language": lang}
+        for test in tests:
+            serial_time = None
+            parallel_time = None
+            
+            for i in range(len(results["Language"])):
+                if results["Language"][i] == lang and results["Test"][i] == test:
+                    if results["Mode"][i] == "Serial":
+                        serial_time = results["Time"][i]
+                    elif results["Mode"][i] == "Parallel":
+                        parallel_time = results["Time"][i]
+            
+            if serial_time is not None and parallel_time is not None and parallel_time > 0:
+                speedup = serial_time / parallel_time
+                lang_data[test] = speedup
+            else:
+                lang_data[test] = 0
+        
+        plot_data.append(lang_data)
+    
+    # Determine positions for bars
+    x = np.arange(len(plot_data))
+    width = 0.25
+    
+    # Plot bars for each test
     for i, test in enumerate(tests):
-        times = [results[lang][f'{test}_parallel'] for lang in languages]
-        ax2.bar(x + i*width, times, width, label=test.capitalize())
+        values = [data[test] for data in plot_data]
+        offset = (i - 1) * width
+        bars = ax.bar(x + offset, values, width, label=test)
+        
+        # Add value labels on top of bars
+        for j, v in enumerate(values):
+            if v > 0:
+                ax.text(j + offset, v + 0.05, f'{v:.2f}x', ha='center', va='bottom', fontsize=8)
     
-    ax2.set_ylabel('Time (seconds)')
-    ax2.set_title('Parallel Performance Comparison')
-    ax2.set_xticks(x + width)
-    ax2.set_xticklabels(languages)
-    ax2.legend()
+    # Add reference line at y=1 (neutral speedup)
+    ax.axhline(y=1, color='r', linestyle='-', alpha=0.3)
+    
+    # Add labels and legend
+    ax.set_title('Speedup Factors (Serial/Parallel) by Language and Test')
+    ax.set_xlabel('Language')
+    ax.set_ylabel('Speedup Factor (higher is better)')
+    ax.set_xticks(x)
+    ax.set_xticklabels([data["Language"] for data in plot_data], rotation=45)
+    ax.legend()
+    
+    # Add grid
+    ax.grid(True, linestyle='--', alpha=0.7)
     
     plt.tight_layout()
-    plt.savefig('performance_comparison.png')
+    plt.savefig('speedup_comparison.png', dpi=300)
+    print("Speedup comparison visualization saved as speedup_comparison.png")
 
-def main():
-    # Read all results
-    results = read_json_files()
+
+def create_mpi_comparison_plot(results, mpi_langs, regular_langs):
+    """Create bar plots comparing MPI and non-MPI implementations"""
+    # Find pairs of MPI and regular implementations
+    mpi_pairs = []
+    for mpi_lang in mpi_langs:
+        base_lang = re.sub(r' MPI$', '', mpi_lang)
+        if base_lang in regular_langs:
+            mpi_pairs.append((base_lang, mpi_lang))
     
-    # Create plots
-    plot_results(results)
+    if not mpi_pairs:
+        return  # No MPI pairs found
     
-    # Generate comparison data
-    comparison = create_comparison_data(results)
+    # Create figure
+    fig, axes = plt.subplots(len(mpi_pairs), 3, figsize=(15, len(mpi_pairs) * 5))
+    fig.suptitle('MPI vs Regular Implementation Comparison', fontsize=16)
     
-    # Save comparison data
-    with open('performance_ratio.json', 'w') as f:
-        json.dump(comparison, f, indent=2)
+    # Set test names 
+    tests = ["Fibonacci", "Primes", "QuickSort"]
+    
+    # Only one pair, need to reshape axes
+    if len(mpi_pairs) == 1:
+        axes = np.array([axes])
+    
+    # Create plots for each pair and test
+    for i, (reg_lang, mpi_lang) in enumerate(mpi_pairs):
+        for j, test in enumerate(tests):
+            ax = axes[i, j]
+            
+            # Get data for this pair and test
+            reg_serial = None
+            reg_parallel = None
+            mpi_serial = None
+            mpi_parallel = None
+            
+            for k in range(len(results["Language"])):
+                if results["Test"][k] == test:
+                    if results["Language"][k] == reg_lang:
+                        if results["Mode"][k] == "Serial":
+                            reg_serial = results["Time"][k]
+                        elif results["Mode"][k] == "Parallel":
+                            reg_parallel = results["Time"][k]
+                    elif results["Language"][k] == mpi_lang:
+                        if results["Mode"][k] == "Serial":
+                            mpi_serial = results["Time"][k]
+                        elif results["Mode"][k] == "Parallel":
+                            mpi_parallel = results["Time"][k]
+            
+            # Skip if data is incomplete
+            if any(x is None for x in [reg_serial, reg_parallel, mpi_serial, mpi_parallel]):
+                ax.text(0.5, 0.5, 'No data available', ha='center', va='center')
+                continue
+            
+            # Calculate speedup factors
+            reg_speedup = reg_serial / reg_parallel if reg_parallel > 0 else float('inf')
+            mpi_speedup = mpi_serial / mpi_parallel if mpi_parallel > 0 else float('inf')
+            parallel_gain = reg_parallel / mpi_parallel if mpi_parallel > 0 else float('inf')
+            
+            # Prepare data for plotting
+            languages = [reg_lang, mpi_lang]
+            serial_times = [reg_serial, mpi_serial]
+            parallel_times = [reg_parallel, mpi_parallel]
+            speedups = [reg_speedup, mpi_speedup]
+            
+            # Set positions for bars
+            x = np.arange(len(languages))
+            bar_width = 0.35
+            
+            # Create plot with two sets of bars
+            ax.bar(x - bar_width/2, serial_times, bar_width, label='Serial', color='blue')
+            ax.bar(x + bar_width/2, parallel_times, bar_width, label='Parallel', color='orange')
+            
+            # Add title and labels
+            ax.set_title(f'{test} - {reg_lang} vs {mpi_lang}')
+            ax.set_xlabel('Implementation')
+            ax.set_ylabel('Execution Time (seconds)')
+            ax.set_xticks(x)
+            ax.set_xticklabels(languages)
+            ax.legend()
+            
+            # Add grid
+            ax.grid(True, linestyle='--', alpha=0.7)
+            
+            # Annotate with speedup information
+            for k, lang in enumerate(languages):
+                ax.text(k, 0.85 * max(serial_times + parallel_times), 
+                       f'Speedup: {speedups[k]:.2f}x', 
+                       ha='center', va='center', bbox=dict(boxstyle='round', alpha=0.1))
+            
+            # Annotate performance gain
+            ax.text(0.5, 0.95 * max(serial_times + parallel_times),
+                  f'MPI Parallel Gain: {parallel_gain:.2f}x',
+                  ha='center', va='center', 
+                  bbox=dict(boxstyle='round', alpha=0.1, color='orange' if parallel_gain > 1 else 'gray'))
+    
+    plt.tight_layout(rect=[0, 0, 1, 0.97])
+    plt.savefig('mpi_comparison.png', dpi=300)
+    print("MPI comparison visualization saved as mpi_comparison.png")
+
 
 if __name__ == "__main__":
     # Create logs directory if it doesn't exist
     script_dir = Path(__file__).parent
     log_dir = script_dir / "logs"
     log_dir.mkdir(exist_ok=True)
-    process_logs()
-    main()
+    
+    # Process logs and generate summary
+    consolidated_metrics, raw_results = process_logs()
+    
+    # Read all JSON results for additional processing
+    json_results = read_json_files()
+    
+    # Create performance comparison data relative to Python
+    create_comparison_data(json_results, consolidated_metrics)
+    
+    # Export all consolidated metrics to a single JSON file
+    output_file = "benchmark_metrics.json"
+    with open(output_file, 'w') as f:
+        json.dump(consolidated_metrics, f, indent=2)
+    
+    print(f"\nAll benchmark metrics exported to {output_file}")
+    print("The file includes:")
+    print("  - Absolute execution times for all languages and tests")
+    print("  - Speedup factors (serial/parallel) for each language")
+    print("  - MPI vs non-MPI implementation comparisons")
+    print("  - Performance relative to Python baseline")
+    
+    # Create visualizations
+    try:
+        # Extract MPI and regular languages for comparison
+        languages = set(raw_results["Language"])
+        mpi_langs = [lang for lang in languages if "MPI" in lang]
+        regular_langs = [lang for lang in languages if "MPI" not in lang]
+        
+        create_bar_plots(raw_results)
+        create_mpi_comparison_plot(raw_results, mpi_langs, regular_langs)
+        print("\nVisualization completed successfully")
+    except Exception as e:
+        print(f"\nError creating visualizations: {str(e)}")
+        print("JSON metrics were still exported successfully")

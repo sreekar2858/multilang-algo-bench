@@ -26,6 +26,9 @@ fi
 echo "Using $THREADS threads for benchmarks"
 [[ -n "$BENCHMARK" ]] && echo "Running only $BENCHMARK benchmark"
 
+# Set the number of MPI processes (default to the same as threads)
+MPI_PROCESSES=$THREADS
+
 # Colors for prettier output
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -115,6 +118,15 @@ else
     fi
 fi
 
+MPI_AVAILABLE=true
+if ! check_command mpicc "MPI C benchmark"; then
+    MPI_AVAILABLE=false
+elif ! check_command mpicxx "MPI C++ benchmark"; then
+    MPI_AVAILABLE=false
+elif ! check_command mpirun "MPI benchmark execution"; then
+    MPI_AVAILABLE=false
+fi
+
 # Function to load modules for HPC environments if needed
 load_modules() {
     # Uncomment and modify these lines if running on an HPC/cluster environment
@@ -125,6 +137,7 @@ load_modules() {
         module load Go  # For Go
         module load Rust  # For Rust
         module load Java  # For Java
+        module load OpenMPI  # For MPI benchmarks
     fi
 }
 
@@ -161,6 +174,40 @@ build_cpp() {
         fi
     else
         error "Skipping C++ benchmark build"
+        return 1
+    fi
+}
+
+# Build C MPI benchmark
+build_c_mpi() {
+    print_header "Building C MPI benchmark"
+    if [ "$C_AVAILABLE" = true ] && [ "$MPI_AVAILABLE" = true ]; then
+        if run_with_error_handling mpicc -O3 src/c/c_test_mpi.c -o bin/c_test_mpi -lm; then
+            status "C MPI benchmark built successfully"
+            return 0
+        else
+            error "C MPI benchmark build failed"
+            return 1
+        fi
+    else
+        error "Skipping C MPI benchmark build"
+        return 1
+    fi
+}
+
+# Build C++ MPI benchmark
+build_cpp_mpi() {
+    print_header "Building C++ MPI benchmark"
+    if [ "$CPP_AVAILABLE" = true ] && [ "$MPI_AVAILABLE" = true ]; then
+        if run_with_error_handling mpicxx -O3 -std=c++17 src/cpp/cpp_test_mpi.cpp -o bin/cpp_test_mpi; then
+            status "C++ MPI benchmark built successfully"
+            return 0
+        else
+            error "C++ MPI benchmark build failed"
+            return 1
+        fi
+    else
+        error "Skipping C++ MPI benchmark build"
         return 1
     fi
 }
@@ -271,6 +318,40 @@ run_cpp() {
     fi
 }
 
+# Run C MPI benchmark
+run_c_mpi() {
+    print_header "Running C MPI benchmark"
+    if [ -f bin/c_test_mpi ]; then
+        if run_with_error_handling mpirun -np $MPI_PROCESSES bin/c_test_mpi; then
+            status "C MPI benchmark completed"
+            return 0
+        else
+            error "C MPI benchmark failed during execution"
+            return 1
+        fi
+    else
+        error "C MPI executable not found. Build may have failed."
+        return 1
+    fi
+}
+
+# Run C++ MPI benchmark
+run_cpp_mpi() {
+    print_header "Running C++ MPI benchmark"
+    if [ -f bin/cpp_test_mpi ]; then
+        if run_with_error_handling mpirun -np $MPI_PROCESSES bin/cpp_test_mpi; then
+            status "C++ MPI benchmark completed"
+            return 0
+        else
+            error "C++ MPI benchmark failed during execution"
+            return 1
+        fi
+    else
+        error "C++ MPI executable not found. Build may have failed."
+        return 1
+    fi
+}
+
 # Run Go benchmark
 run_go() {
     print_header "Running Go benchmark"
@@ -329,7 +410,7 @@ run_java() {
 run_python() {
     print_header "Running Python benchmark"
     if [ "$PYTHON_AVAILABLE" = true ]; then
-        if run_with_error_handling python3 src/python/python_test.py $THREADS; then
+        if run_with_error_handling /home/jp267451/miniconda3/bin/python3.12 src/python/python_test.py $THREADS; then
             status "Python benchmark completed"
             return 0
         else
@@ -346,7 +427,7 @@ run_python() {
 process_results() {
     print_header "Processing benchmark results"
     if [ "$PYTHON_AVAILABLE" = true ]; then
-        if run_with_error_handling python3 process_logs.py; then
+        if run_with_error_handling /home/jp267451/miniconda3/bin/python3.12 process_logs.py; then
             status "Results processed successfully"
             echo -e "\nResults summary available in CSV files and have been printed above."
             return 0
@@ -367,7 +448,7 @@ print_usage() {
     echo "Run the entire benchmark suite or a specific benchmark with the specified number of threads."
     echo ""
     echo "Arguments:"
-    echo "  benchmark   Optional: Specific benchmark to run (c, cpp, go, rust, java, python)"
+    echo "  benchmark   Optional: Specific benchmark to run (c, cpp, c_mpi, cpp_mpi, go, rust, java, python)"
     echo "  threads     Optional: Number of threads to use (default: all available)"
     echo ""
     echo "Examples:"
@@ -375,6 +456,7 @@ print_usage() {
     echo "  $0 8                   # Run all benchmarks with 8 threads"
     echo "  $0 python              # Run only the Python benchmark with all available threads"
     echo "  $0 python 4            # Run only the Python benchmark with 4 threads"
+    echo "  $0 c_mpi 4             # Run only the C MPI benchmark with 4 processes"
 }
 
 # Function to run a specific benchmark
@@ -391,6 +473,16 @@ run_benchmark() {
         cpp)
             if build_cpp; then
                 run_cpp && success=true
+            fi
+            ;;
+        c_mpi)
+            if build_c_mpi; then
+                run_c_mpi && success=true
+            fi
+            ;;
+        cpp_mpi)
+            if build_cpp_mpi; then
+                run_cpp_mpi && success=true
             fi
             ;;
         go)
@@ -461,6 +553,34 @@ run_all_benchmarks() {
         failed_benchmarks+=("C++ (build)")
     fi
     ((total_count++))
+    
+    # Build and run C MPI if available
+    if [ "$MPI_AVAILABLE" = true ]; then
+        if build_c_mpi; then
+            if run_c_mpi; then
+                ((success_count++))
+            else
+                failed_benchmarks+=("C MPI (runtime)")
+            fi
+        else
+            failed_benchmarks+=("C MPI (build)")
+        fi
+        ((total_count++))
+        
+        # Build and run C++ MPI
+        if build_cpp_mpi; then
+            if run_cpp_mpi; then
+                ((success_count++))
+            else
+                failed_benchmarks+=("C++ MPI (runtime)")
+            fi
+        else
+            failed_benchmarks+=("C++ MPI (build)")
+        fi
+        ((total_count++))
+    else
+        warning "MPI not available. Skipping MPI benchmarks."
+    fi
     
     # Build and run Go
     if build_go; then

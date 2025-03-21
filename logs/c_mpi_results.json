@@ -1,0 +1,10 @@
+{
+  "language": "C MPI",
+  "process_count": 1.000000,
+  "fibonacci_serial": 0.000326,
+  "fibonacci_parallel": 0.000510,
+  "primes_serial": 0.005623,
+  "primes_parallel": 0.005577,
+  "sort_serial": 0.077078,
+  "sort_parallel": 0.076277
+}

@@ -1,0 +1,364 @@
+{
+  "absolute_times": {
+    "Go": {
+      "threads": 1,
+      "fibonacci": {
+        "serial": 0.000396108,
+        "parallel": 0.00029279
+      },
+      "primes": {
+        "serial": 0.009140918,
+        "parallel": 0.009121575
+      },
+      "quicksort": {
+        "serial": 0.373106947,
+        "parallel": 0.372748119
+      }
+    },
+    "Java": {
+      "threads": 0,
+      "fibonacci": {
+        "serial": 0.001753473,
+        "parallel": 0.007408671
+      },
+      "primes": {
+        "serial": 0.014465097,
+        "parallel": 0.147786076
+      },
+      "quicksort": {
+        "serial": 0.109710478,
+        "parallel": 0.053478008
+      }
+    },
+    "C": {
+      "threads": 1.0,
+      "fibonacci": {
+        "serial": 0.000292,
+        "parallel": 0.001305
+      },
+      "primes": {
+        "serial": 0.005069,
+        "parallel": 0.005346
+      },
+      "quicksort": {
+        "serial": 0.076742,
+        "parallel": 0.079157
+      }
+    },
+    "Rust": {
+      "threads": 1,
+      "fibonacci": {
+        "serial": 0.000346367,
+        "parallel": 0.000711961
+      },
+      "primes": {
+        "serial": 0.005620657,
+        "parallel": 0.005792566
+      },
+      "quicksort": {
+        "serial": 0.082218949,
+        "parallel": 0.105075324
+      }
+    },
+    "C++": {
+      "threads": 1,
+      "fibonacci": {
+        "serial": 0.000374554,
+        "parallel": 0.00091896
+      },
+      "primes": {
+        "serial": 0.00527137,
+        "parallel": 0.00305149
+      },
+      "quicksort": {
+        "serial": 0.0814114,
+        "parallel": 0.0347372
+      }
+    },
+    "Python": {
+      "threads": 1,
+      "fibonacci": {
+        "serial": 0.23341703414916992,
+        "parallel": 1.5972092151641846
+      },
+      "primes": {
+        "serial": 0.03576517105102539,
+        "parallel": 0.0712592601776123
+      },
+      "quicksort": {
+        "serial": 1.951631784439087,
+        "parallel": 0.9469778537750244
+      }
+    },
+    "C++ MPI": {
+      "threads": 1,
+      "fibonacci": {
+        "serial": 0.000348158,
+        "parallel": 0.000666456
+      },
+      "primes": {
+        "serial": 0.00518249,
+        "parallel": 0.00557462
+      },
+      "quicksort": {
+        "serial": 0.0832322,
+        "parallel": 0.0839745
+      }
+    },
+    "C MPI": {
+      "threads": 1.0,
+      "fibonacci": {
+        "serial": 0.000326,
+        "parallel": 0.00051
+      },
+      "primes": {
+        "serial": 0.005623,
+        "parallel": 0.005577
+      },
+      "quicksort": {
+        "serial": 0.077078,
+        "parallel": 0.076277
+      }
+    }
+  },
+  "speedup_factors": {
+    "C": {
+      "fibonacci": 0.22375478927203066,
+      "primes": 0.9481855592966704,
+      "quicksort": 0.9694910115340399
+    },
+    "C MPI": {
+      "fibonacci": 0.6392156862745098,
+      "primes": 1.008248162094316,
+      "quicksort": 1.0105011995752324
+    },
+    "C++": {
+      "fibonacci": 0.4075846609210411,
+      "primes": 1.7274741192007839,
+      "quicksort": 2.343637368584687
+    },
+    "C++ MPI": {
+      "fibonacci": 0.522402079056982,
+      "primes": 0.9296579856564214,
+      "quicksort": 0.991160411791675
+    },
+    "Go": {
+      "fibonacci": 1.3528740735680862,
+      "primes": 1.0021205767644294,
+      "quicksort": 1.0009626554279138
+    },
+    "Java": {
+      "fibonacci": 0.23667848120128426,
+      "primes": 0.09787861882197887,
+      "quicksort": 2.051506443545915
+    },
+    "Python": {
+      "fibonacci": 0.146140550613575,
+      "primes": 0.5019020820856321,
+      "quicksort": 2.060905412580789
+    },
+    "Rust": {
+      "fibonacci": 0.4864971536362244,
+      "primes": 0.9703224788461625,
+      "quicksort": 0.7824762833945675
+    }
+  },
+  "mpi_comparisons": {
+    "C_vs_C_MPI": {
+      "fibonacci": {
+        "regular": {
+          "serial": 0.000292,
+          "parallel": 0.001305,
+          "speedup": 0.22375478927203066
+        },
+        "mpi": {
+          "serial": 0.000326,
+          "parallel": 0.00051,
+          "speedup": 0.6392156862745098
+        },
+        "mpi_performance_gain": 2.5588235294117645
+      },
+      "primes": {
+        "regular": {
+          "serial": 0.005069,
+          "parallel": 0.005346,
+          "speedup": 0.9481855592966704
+        },
+        "mpi": {
+          "serial": 0.005623,
+          "parallel": 0.005577,
+          "speedup": 1.008248162094316
+        },
+        "mpi_performance_gain": 0.9585798816568046
+      },
+      "quicksort": {
+        "regular": {
+          "serial": 0.076742,
+          "parallel": 0.079157,
+          "speedup": 0.9694910115340399
+        },
+        "mpi": {
+          "serial": 0.077078,
+          "parallel": 0.076277,
+          "speedup": 1.0105011995752324
+        },
+        "mpi_performance_gain": 1.0377571220682513
+      }
+    },
+    "C++_vs_C++_MPI": {
+      "fibonacci": {
+        "regular": {
+          "serial": 0.000374554,
+          "parallel": 0.00091896,
+          "speedup": 0.4075846609210411
+        },
+        "mpi": {
+          "serial": 0.000348158,
+          "parallel": 0.000666456,
+          "speedup": 0.522402079056982
+        },
+        "mpi_performance_gain": 1.3788757247290144
+      },
+      "primes": {
+        "regular": {
+          "serial": 0.00527137,
+          "parallel": 0.00305149,
+          "speedup": 1.7274741192007839
+        },
+        "mpi": {
+          "serial": 0.00518249,
+          "parallel": 0.00557462,
+          "speedup": 0.9296579856564214
+        },
+        "mpi_performance_gain": 0.5473897772404218
+      },
+      "quicksort": {
+        "regular": {
+          "serial": 0.0814114,
+          "parallel": 0.0347372,
+          "speedup": 2.343637368584687
+        },
+        "mpi": {
+          "serial": 0.0832322,
+          "parallel": 0.0839745,
+          "speedup": 0.991160411791675
+        },
+        "mpi_performance_gain": 0.41366367170986434
+      }
+    }
+  },
+  "relative_to_python": {
+    "go": {
+      "fibonacci": {
+        "serial": 589.2762432194501,
+        "parallel": 5455.135814625446
+      },
+      "primes": {
+        "serial": 3.9126454313478574,
+        "parallel": 7.8121662298026715
+      },
+      "quicksort": {
+        "serial": 5.2307570259180585,
+        "parallel": 2.54053020124033
+      }
+    },
+    "java": {
+      "fibonacci": {
+        "serial": 133.11698221139986,
+        "parallel": 215.586468229482
+      },
+      "primes": {
+        "serial": 2.4725151204326794,
+        "parallel": 0.4821784440478162
+      },
+      "quicksort": {
+        "serial": 17.788927912966408,
+        "parallel": 17.707799695437878
+      }
+    },
+    "c": {
+      "fibonacci": {
+        "serial": 799.373404620445,
+        "parallel": 1223.9151074055055
+      },
+      "primes": {
+        "serial": 7.055666019140934,
+        "parallel": 13.329453830454977
+      },
+      "quicksort": {
+        "serial": 25.431077955214704,
+        "parallel": 11.963286301590818
+      }
+    },
+    "rust": {
+      "fibonacci": {
+        "serial": 673.9009032303018,
+        "parallel": 2243.394252162948
+      },
+      "primes": {
+        "serial": 6.363165560720995,
+        "parallel": 12.301846915099855
+      },
+      "quicksort": {
+        "serial": 23.737007200603927,
+        "parallel": 9.012371484812403
+      }
+    },
+    "cpp": {
+      "fibonacci": {
+        "serial": 623.1866009952369,
+        "parallel": 1738.0617384480113
+      },
+      "primes": {
+        "serial": 6.7847961822117195,
+        "parallel": 23.352283696689913
+      },
+      "quicksort": {
+        "serial": 23.972463124809142,
+        "parallel": 27.261202796282497
+      }
+    },
+    "python": {
+      "fibonacci": {
+        "serial": 1.0,
+        "parallel": 1.0
+      },
+      "primes": {
+        "serial": 1.0,
+        "parallel": 1.0
+      },
+      "quicksort": {
+        "serial": 1.0,
+        "parallel": 1.0
+      }
+    },
+    "cpp_mpi": {
+      "fibonacci": {
+        "serial": 670.4342113326993,
+        "parallel": 2396.5711392262724
+      },
+      "primes": {
+        "serial": 6.901155824907601,
+        "parallel": 12.782801370786226
+      },
+      "quicksort": {
+        "serial": 23.448037952127745,
+        "parallel": 11.276969243937438
+      }
+    },
+    "c_mpi": {
+      "fibonacci": {
+        "serial": 716.0031722367175,
+        "parallel": 3131.782774831734
+      },
+      "primes": {
+        "serial": 6.360514147434713,
+        "parallel": 12.777346275347373
+      },
+      "quicksort": {
+        "serial": 25.320218278096046,
+        "parallel": 12.41498556281742
+      }
+    }
+  }
+}
