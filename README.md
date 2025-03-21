@@ -1,3 +1,7 @@
+# multilang-algo-bench
+
+A comprehensive benchmark suite comparing algorithmic performance across multiple programming languages, implementing both serial and parallel versions of classic algorithms.
+
 Speed Comparison Tests
 =====================
 
@@ -44,6 +48,14 @@ For Java, you'll need the org.json library in your classpath.
 For Python, install required packages:
 ```bash
 pip install pandas matplotlib
+```
+
+## Quick Start
+
+Clone the repository:
+```bash
+git clone https://github.com/yourusername/multilang-algo-bench.git
+cd multilang-algo-bench
 ```
 
 ## Compilation Instructions:
