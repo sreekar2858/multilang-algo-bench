@@ -264,7 +264,7 @@ def run_tests(process_count: int = None) -> None:
     # Test parameters
     PRIME_LIMIT = 100000
     SORT_SIZE = 1000000
-    FIB_N = 35  # Fibonacci sequence up to n
+    FIB_N = 100000  # Fibonacci sequence up to n
 
     results = {
         "language": "Python",

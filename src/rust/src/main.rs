@@ -190,7 +190,7 @@ fn main() {
 
     const PRIME_LIMIT: u64 = 100_000;
     const SORT_SIZE: usize = 1_000_000;
-    const FIB_N: u64 = 35;
+    const FIB_N: u64 = 100_000;
 
     // Create logs directory with robust path handling
     let logs_dir = {

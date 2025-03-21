@@ -494,7 +494,7 @@ int main(int argc, char** argv) {
     
     const int PRIME_LIMIT = 100000;
     const int SORT_SIZE = 1000000;
-    const int FIB_N = 35;
+    const int FIB_N = 100000;
     
 #ifdef _WIN32
     _mkdir("logs");

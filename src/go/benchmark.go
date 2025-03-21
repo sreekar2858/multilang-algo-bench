@@ -238,7 +238,7 @@ func main() {
 	const (
 		primeLimit = 100000
 		sortSize   = 1000000
-		fibN       = 35
+		fibN       = 100000
 	)
 
 	// Create logs directory with absolute path from working directory

@@ -176,7 +176,7 @@ public class JavaTest {
 
         final long PRIME_LIMIT = 100_000;
         final int SORT_SIZE = 1_000_000;
-        final int FIB_N = 35;
+        final int FIB_N = 100_000;
 
         // Create logs directory if it doesn't exist
         try {
