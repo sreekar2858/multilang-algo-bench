@@ -51,8 +51,11 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: '17'
+    - name: Download Checkstyle
+      run: |
+        curl -L -o checkstyle.jar https://github.com/checkstyle/checkstyle/releases/download/checkstyle-10.12.0/checkstyle-10.12.0-all.jar
     - name: Run checkstyle
-      run: java -jar json.jar -c checkstyle.xml src/java/
+      run: java -jar checkstyle.jar -c checkstyle.xml src/java/
 
   go-lint:
     runs-on: ubuntu-latest
