@@ -212,3 +212,38 @@ This will:
 - Prime number calculation shows excellent parallel speedup in Go, C++, and Python.
 - QuickSort sees significant speedup in C++, Python, and Java when running in parallel.
 - The overhead of parallelization makes the parallel Fibonacci implementation slower than the serial version in most languages due to the small workload.
+
+## Performance Results
+
+Below are the performance ratios relative to Python (Python = 1.0, higher numbers mean faster performance):
+
+### Serial Implementation Performance
+
+| Language | Fibonacci | Prime Numbers | QuickSort |
+|----------|-----------|---------------|-----------|
+| Rust     | 16.50x    | 8.82x         | 34.47x    |
+| C++      | 3.40x     | 10.36x        | 33.02x    |
+| C        | 3.70x     | 10.67x        | 37.50x    |
+| Go       | 8.24x     | 5.66x         | 7.47x     |
+| Java     | 2.52x     | 4.00x         | 20.52x    |
+| Python   | 1.00x     | 1.00x         | 1.00x     |
+
+### Parallel Implementation Performance
+
+| Language | Fibonacci | Prime Numbers | QuickSort |
+|----------|-----------|---------------|-----------|
+| Rust     | 0.10x     | 7.42x         | 21.08x    |
+| C++      | 0.05x     | 9.26x         | 38.01x    |
+| C        | 0.02x     | 1.77x         | 17.99x    |
+| Go       | 0.75x     | 9.74x         | 5.61x     |
+| Java     | 0.01x     | 0.16x         | 20.01x    |
+| Python   | 1.00x     | 1.00x         | 1.00x     |
+
+Key observations:
+- In serial implementations, Rust shows exceptional performance for Fibonacci (16.50x faster than Python)
+- C++ and C excel at QuickSort in both serial and parallel implementations (33-38x faster than Python)
+- For prime numbers, C++ and C lead in serial performance, while Go and C++ lead in parallel
+- Parallel Fibonacci shows lower performance ratios due to overhead outweighing benefits for small workloads
+- Java maintains consistent QuickSort performance in both serial and parallel implementations
+
+Note: Higher numbers indicate better performance relative to Python. Numbers less than 1.0 indicate slower performance than the Python baseline.
