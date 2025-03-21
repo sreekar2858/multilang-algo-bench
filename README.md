@@ -221,29 +221,29 @@ Below are the performance ratios relative to Python (Python = 1.0, higher number
 
 | Language | Fibonacci | Prime Numbers | QuickSort |
 |----------|-----------|---------------|-----------|
-| Rust     | 16.50x    | 8.82x         | 34.47x    |
-| C++      | 3.40x     | 10.36x        | 33.02x    |
-| C        | 3.70x     | 10.67x        | 37.50x    |
-| Go       | 8.24x     | 5.66x         | 7.47x     |
-| Java     | 2.52x     | 4.00x         | 20.52x    |
+| Rust     | 663.32x   | 9.09x         | 33.26x    |
+| C++      | 678.26x   | 10.18x        | 33.23x    |
+| C        | 903.62x   | 10.62x        | 35.55x    |
+| Go       | 480.39x   | 5.81x         | 7.31x     |
+| Java     | 140.80x   | 3.90x         | 27.82x    |
 | Python   | 1.00x     | 1.00x         | 1.00x     |
 
 ### Parallel Implementation Performance
 
 | Language | Fibonacci | Prime Numbers | QuickSort |
 |----------|-----------|---------------|-----------|
-| Rust     | 0.10x     | 7.42x         | 21.08x    |
-| C++      | 0.05x     | 9.26x         | 38.01x    |
-| C        | 0.02x     | 1.77x         | 17.99x    |
-| Go       | 0.75x     | 9.74x         | 5.61x     |
-| Java     | 0.01x     | 0.16x         | 20.01x    |
+| Rust     | 2162.34x  | 21.14x        | 16.63x    |
+| C++      | 1339.81x  | 40.94x        | 47.59x    |
+| C        | 1977.34x  | 24.23x        | 23.22x    |
+| Go       | 5044.14x  | 12.29x        | 4.76x     |
+| Java     | 220.00x   | 2.13x         | 41.01x    |
 | Python   | 1.00x     | 1.00x         | 1.00x     |
 
 Key observations:
-- In serial implementations, Rust shows exceptional performance for Fibonacci (16.50x faster than Python)
-- C++ and C excel at QuickSort in both serial and parallel implementations (33-38x faster than Python)
-- For prime numbers, C++ and C lead in serial performance, while Go and C++ lead in parallel
-- Parallel Fibonacci shows lower performance ratios due to overhead outweighing benefits for small workloads
-- Java maintains consistent QuickSort performance in both serial and parallel implementations
+- In serial implementations, C shows exceptional performance for Fibonacci (903.62x faster than Python)
+- C++ excels at QuickSort in parallel implementation (47.59x faster than Python)
+- For prime numbers, C++ leads in both serial (10.18x) and parallel (40.94x) performance
+- Go shows the best parallel Fibonacci performance (5044.14x faster than Python)
+- Java maintains strong QuickSort performance in parallel implementation (41.01x faster than Python)
 
-Note: Higher numbers indicate better performance relative to Python. Numbers less than 1.0 indicate slower performance than the Python baseline.
+Note: Higher numbers indicate better performance relative to Python. Values are automatically extracted from the performance_ratio.json file.
