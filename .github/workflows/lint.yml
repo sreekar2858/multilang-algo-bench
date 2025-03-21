@@ -7,10 +7,19 @@ on:
     branches: [ main ]
 
 jobs:
+  c-lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install clang-format
+      run: sudo apt-get install -y clang-format
+    - name: Run clang-format
+      run: find src/c -name '*.c' -o -name '*.h' | xargs clang-format -i --style=file
+
   cpp-lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install clang-format
       run: sudo apt-get install -y clang-format
     - name: Run clang-format
@@ -19,9 +28,9 @@ jobs:
   python-lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.x'
     - name: Install dependencies
@@ -36,27 +45,23 @@ jobs:
   java-lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up JDK
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: '11'
-    - name: Install checkstyle
-      run: |
-        wget https://github.com/checkstyle/checkstyle/releases/download/checkstyle-10.3.4/checkstyle-10.3.4-all.jar
-        mv checkstyle-10.3.4-all.jar checkstyle.jar
+        java-version: '17'
     - name: Run checkstyle
-      run: java -jar checkstyle.jar -c checkstyle.xml src/java/
+      run: java -jar json.jar -c checkstyle.xml src/java/
 
   go-lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version: '1.22'
     - name: Run gofmt
       run: |
         cd src/go
@@ -69,7 +74,7 @@ jobs:
   rust-lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Rust
       uses: actions-rs/toolchain@v1
       with:
