@@ -1,10 +1,10 @@
 {
-  "sort_parallel": 0.067706938,
-  "primes_parallel": 0.119429381,
-  "fibonacci_parallel": 0.006660276,
-  "processor_count": 72,
-  "fibonacci_serial": 2.937E-6,
-  "primes_serial": 0.013731349,
+  "sort_parallel": 0.042938019,
+  "primes_parallel": 0.057505134,
+  "fibonacci_parallel": 0.0073882,
+  "processor_count": 1,
+  "fibonacci_serial": 0.001707171,
+  "primes_serial": 0.014258393,
   "language": "Java",
-  "sort_serial": 0.135259497
+  "sort_serial": 0.097989583
 }

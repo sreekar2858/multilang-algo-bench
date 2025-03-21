@@ -145,7 +145,9 @@ def find_primes_parallel(limit: int, process_count: int) -> List[int]:
     
     # For larger ranges, split work into chunks larger than the overhead
     # Balance chunk size to reduce overhead but keep good parallelism
-    chunk_size = max(10000, (end - start + 1) // (process_count // 2))
+    # Ensure divisor is at least 1 to avoid division by zero
+    divisor = max(1, process_count // 2)
+    chunk_size = max(10000, (end - start + 1) // divisor)
     chunks = []
     
     for chunk_start in range(start, end + 1, chunk_size):
@@ -155,6 +157,8 @@ def find_primes_parallel(limit: int, process_count: int) -> List[int]:
     # Reduce the number of workers for prime calculation to reduce overhead
     # Use fewer processes but with larger chunks for better efficiency
     num_workers = min(process_count, max(4, len(chunks)))
+    # Ensure at least one worker
+    num_workers = max(1, num_workers)
     
     # Process chunks in parallel
     with ProcessPoolExecutor(max_workers=num_workers) as executor:

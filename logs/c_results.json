@@ -1,10 +1,10 @@
 {
   "language": "C",
-  "thread_count": 8.000000,
-  "fibonacci_serial": 0.001000,
-  "fibonacci_parallel": 0.002000,
-  "primes_serial": 0.008000,
-  "primes_parallel": 0.003000,
-  "sort_serial": 0.106000,
-  "sort_parallel": 0.067000
+  "thread_count": 1.000000,
+  "fibonacci_serial": 0.000266,
+  "fibonacci_parallel": 0.000822,
+  "primes_serial": 0.005238,
+  "primes_parallel": 0.005057,
+  "sort_serial": 0.076698,
+  "sort_parallel": 0.075839
 }

@@ -1,10 +1,10 @@
 {
   "language": "Python",
-  "primes_serial": 0.07898187637329102,
-  "primes_parallel": 0.24751687049865723,
-  "sort_serial": 3.6958940029144287,
-  "sort_parallel": 2.111994504928589,
-  "fibonacci_serial": 0.4479823112487793,
-  "fibonacci_parallel": 0.3288280963897705,
-  "process_count": 8
+  "primes_serial": 0.055629730224609375,
+  "primes_parallel": 0.12255311012268066,
+  "sort_serial": 2.726533889770508,
+  "sort_parallel": 1.7608842849731445,
+  "fibonacci_serial": 0.24036216735839844,
+  "fibonacci_parallel": 1.6253695487976074,
+  "process_count": 1
 }

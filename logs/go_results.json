@@ -1,10 +1,10 @@
 {
   "language": "Go",
-  "process_count": 8,
-  "fibonacci_serial": 0.000571,
-  "fibonacci_parallel": 0.0028446,
-  "primes_serial": 0.0099623,
-  "primes_parallel": 0.0050782,
-  "sort_serial": 0.4315357,
-  "sort_parallel": 0.3461002
+  "process_count": 1,
+  "fibonacci_serial": 0.000500345,
+  "fibonacci_parallel": 0.000322229,
+  "primes_serial": 0.009579162,
+  "primes_parallel": 0.009969827,
+  "sort_serial": 0.372735592,
+  "sort_parallel": 0.370236165
 }
